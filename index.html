@@ -83,6 +83,23 @@
       <div class="card">
         <h2>曲リスト</h2>
         <p class="hint">曲名と音域（最低音・最高音）を登録します。音域は楽譜やカラオケの採点情報などで調べて入力してください。最初に入っているのは<b>架空のサンプル</b>です。</p>
+        <div class="csv-box">
+          <h3>CSVで一括登録</h3>
+          <p class="hint small">列の順番は <b>曲名, アーティスト, 最低音, 最高音</b>。音名は C3、F#3、Bb3 のように入力します（C2〜C6）。1行目の見出しはあってもなくてもOKで、ExcelのCSV（UTF-8 / Shift_JIS）も読めます。同じ曲名・アーティストがあれば音域を更新します。</p>
+          <div class="row wrap">
+            <input type="file" id="csvFile" accept=".csv,text/csv" aria-label="CSVファイルを選ぶ">
+            <label class="check"><input type="checkbox" id="csvReplace"> 取り込む前に今の曲リストを空にする</label>
+          </div>
+          <div class="row wrap">
+            <button type="button" id="csvTemplateBtn" class="btn small-btn">テンプレートをダウンロード</button>
+            <button type="button" id="csvExportBtn" class="btn small-btn">今の曲リストをCSVで保存</button>
+            <button type="button" id="removeSamplesBtn" class="btn small-btn">サンプル曲を削除</button>
+          </div>
+          <p id="csvMsg" class="msg" role="status"></p>
+          <ul id="csvErrors" class="err-list"></ul>
+        </div>
+
+        <h3>1曲ずつ追加</h3>
         <form id="songForm" class="form-grid songs">
           <input id="sTitle" placeholder="曲名" required maxlength="40">
           <input id="sArtist" placeholder="アーティスト（任意）" maxlength="30">
@@ -142,6 +159,7 @@
 
   <script src="js/notes.js"></script>
   <script src="js/pitch.js"></script>
+  <script src="js/songcsv.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

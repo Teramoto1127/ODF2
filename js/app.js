@@ -565,6 +565,91 @@
     history = []; store.set("history", history); renderHistory();
   });
 
+  // --- CSV 一括登録 ---
+  function showCsv(msg, isError, errors) {
+    setMsg($("#csvMsg"), msg, isError);
+    var ul = $("#csvErrors");
+    ul.textContent = "";
+    (errors || []).slice(0, 10).forEach(function (e) {
+      ul.appendChild(el("li", null, (e.line ? e.line + "行目: " : "") + e.reason));
+    });
+    if (errors && errors.length > 10) ul.appendChild(el("li", null, "ほか " + (errors.length - 10) + " 件"));
+  }
+
+  function downloadText(name, text) {
+    var blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function sameSong(a, b) { return a.title === b.title && (a.artist || "") === (b.artist || ""); }
+
+  function importCsvText(text) {
+    var res = SongCSV.parseSongs(SongCSV.parseCSV(text), { min: NOTE_MIN, max: NOTE_MAX });
+    if (!res.songs.length) {
+      showCsv("取り込める曲がありませんでした。今の曲リストは変更していません。", true, res.errors);
+      return;
+    }
+    if ($("#csvReplace").checked) {
+      if (!confirm("今の曲リスト（" + songs.length + "曲）を空にして、CSVの" + res.songs.length + "曲に置き換えます。よろしいですか？")) {
+        showCsv("取り込みをキャンセルしました。", false);
+        return;
+      }
+      songs = [];
+    }
+    var added = 0, updated = 0;
+    res.songs.forEach(function (s) {
+      var found = songs.filter(function (x) { return sameSong(x, s); })[0];
+      if (found) { found.low = s.low; found.high = s.high; updated++; }
+      else { songs.push({ id: uid(), title: s.title, artist: s.artist, low: s.low, high: s.high }); added++; }
+    });
+    saveSongs();
+    renderPick();
+    var msg = added + "曲を追加";
+    if (updated) msg += "、" + updated + "曲を更新";
+    if (res.errors.length) msg += "（" + res.errors.length + "行は読み込めずスキップ）";
+    showCsv(msg + "しました。", false, res.errors);
+  }
+
+  $("#csvFile").addEventListener("change", function () {
+    var input = this, file = input.files[0];
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      showCsv("ファイルが大きすぎます（1MBまで）。", true);
+      input.value = "";
+      return;
+    }
+    var rd = new FileReader();
+    rd.onload = function () {
+      try { importCsvText(SongCSV.decodeBuffer(rd.result)); }
+      catch (e) { showCsv("読み込み中にエラーが起きました: " + e.message, true); }
+      input.value = "";
+    };
+    rd.onerror = function () { showCsv("ファイルを読み込めませんでした。", true); input.value = ""; };
+    rd.readAsArrayBuffer(file);
+  });
+  $("#csvTemplateBtn").addEventListener("click", function () {
+    downloadText("songs-template.csv", SongCSV.templateCSV());
+  });
+  $("#csvExportBtn").addEventListener("click", function () {
+    if (!songs.length) { showCsv("保存する曲がありません。", true); return; }
+    downloadText("songs.csv", SongCSV.toCSV(songs));
+    showCsv(songs.length + "曲をCSVに保存しました。", false);
+  });
+  $("#removeSamplesBtn").addEventListener("click", function () {
+    var before = songs.length;
+    songs = songs.filter(function (s) { return !/^s[1-4]$/.test(s.id); });
+    if (songs.length === before) { showCsv("サンプル曲は残っていません。", false); return; }
+    saveSongs();
+    renderPick();
+    showCsv((before - songs.length) + "曲のサンプル曲を削除しました。", false);
+  });
+
   // ---------- 初期表示 ----------
   refreshKeySongOptions();
   renderKeyCheck();
