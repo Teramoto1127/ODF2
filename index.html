@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>カラオケ キーナビ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>カラオケ キーナビ</h1>
+    <p class="tagline">自分の音域を測って、ちょうどいいキーと歌いやすい曲を見つけよう</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="diag" role="tab">① キー診断</button>
+    <button class="tab" data-tab="pick" role="tab">② 選曲サポート</button>
+    <button class="tab" data-tab="practice" role="tab">③ 音程練習</button>
+  </nav>
+
+  <main>
+    <!-- ① キー診断 -->
+    <section id="tab-diag" class="panel active">
+      <div class="card">
+        <h2>1. 自分の音域を測る</h2>
+        <p class="hint">「マイク開始」を押して、<b>いちばん低い声</b>から<b>いちばん高い声</b>まで、無理のない範囲で「あー」と伸ばしてください。同じ高さを約0.3秒キープすると記録されます。</p>
+        <div class="row">
+          <button id="diagMicBtn" class="btn primary">マイク開始</button>
+          <button id="diagResetBtn" class="btn">測定をリセット</button>
+        </div>
+        <div class="live">
+          <div id="diagNote" class="live-note">—</div>
+          <div id="diagCents" class="live-cents"></div>
+        </div>
+        <div class="range-edit">
+          <label>最低音 <select id="myLow"></select></label>
+          <span class="to">〜</span>
+          <label>最高音 <select id="myHigh"></select></label>
+          <button id="saveProfileBtn" class="btn primary">この音域を保存</button>
+        </div>
+        <p id="profileMsg" class="msg"></p>
+        <p class="hint small">測定がずれたときは、上のリストで手動で直せます。ヘッドホン使用や静かな場所だと精度が上がります。</p>
+      </div>
+
+      <div class="card">
+        <h2>2. 曲に合うキーを調べる</h2>
+        <div class="row wrap">
+          <label>曲を選ぶ <select id="keySong"></select></label>
+        </div>
+        <div class="range-edit">
+          <label>曲の最低音 <select id="songLow"></select></label>
+          <span class="to">〜</span>
+          <label>曲の最高音 <select id="songHigh"></select></label>
+        </div>
+        <div id="keyResult" class="result"></div>
+        <div id="rangeViz" class="range-viz"></div>
+        <p class="hint small">曲の音域は、曲リスト（②タブ）に登録した値か、上で入力した値を使います。</p>
+      </div>
+    </section>
+
+    <!-- ② 選曲サポート -->
+    <section id="tab-pick" class="panel">
+      <div class="card">
+        <h2>歌う人</h2>
+        <p class="hint">チェックした人全員が歌いやすい曲を探します。1人でも使えます。</p>
+        <div id="memberList" class="list"></div>
+        <div class="row wrap">
+          <button id="addMeBtn" class="btn">自分（保存した音域）を追加</button>
+        </div>
+        <form id="memberForm" class="form-grid">
+          <input id="mName" placeholder="名前" required maxlength="20">
+          <select id="mLow" aria-label="最低音"></select>
+          <select id="mHigh" aria-label="最高音"></select>
+          <button class="btn" type="submit">人を追加</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>おすすめ曲ランキング</h2>
+        <div id="pickResult" class="list"></div>
+      </div>
+
+      <div class="card">
+        <h2>曲リスト</h2>
+        <p class="hint">曲名と音域（最低音・最高音）を登録します。音域は楽譜やカラオケの採点情報などで調べて入力してください。最初に入っているのは<b>架空のサンプル</b>です。</p>
+        <form id="songForm" class="form-grid songs">
+          <input id="sTitle" placeholder="曲名" required maxlength="40">
+          <input id="sArtist" placeholder="アーティスト（任意）" maxlength="30">
+          <select id="sLow" aria-label="曲の最低音"></select>
+          <select id="sHigh" aria-label="曲の最高音"></select>
+          <button class="btn" type="submit">曲を追加</button>
+        </form>
+        <div id="songList" class="list"></div>
+      </div>
+    </section>
+
+    <!-- ③ 音程練習 -->
+    <section id="tab-practice" class="panel">
+      <div class="card">
+        <h2>音程チェック・練習</h2>
+        <p class="hint">画面の目標の音を声で追いかけます。目標の音に合わせて±50セント以内で約0.4秒キープすると次の音へ進みます。お手本音を使う場合は、マイクに拾われないようヘッドホンがおすすめです。</p>
+        <div class="row wrap">
+          <label>練習メニュー
+            <select id="prMode">
+              <option value="scale">音域に合わせたスケール（ドレミ…の上り下り）</option>
+              <option value="custom">自分のメロディ（音名を入力）</option>
+            </select>
+          </label>
+        </div>
+        <div id="customBox" class="row wrap hidden">
+          <input id="prCustom" class="wide" placeholder="例: C4 D4 E4 G4 E4 D4 C4" value="C4 D4 E4 F4 G4">
+        </div>
+        <div class="row wrap">
+          <button id="prStartBtn" class="btn primary">練習スタート</button>
+          <button id="prStopBtn" class="btn" disabled>終了</button>
+          <button id="prToneBtn" class="btn">お手本音を鳴らす</button>
+          <label class="check"><input type="checkbox" id="prAutoTone"> 目標が変わるたびに自動で鳴らす</label>
+        </div>
+        <p id="prMsg" class="msg"></p>
+
+        <div class="practice-head">
+          <div><span class="small">目標</span><div id="prTarget" class="big">—</div></div>
+          <div><span class="small">いまの声</span><div id="prNow" class="big">—</div></div>
+          <div><span class="small">ずれ</span><div id="prDev" class="big">—</div></div>
+        </div>
+        <div class="meter"><div id="prHold" class="meter-fill"></div></div>
+        <canvas id="prCanvas" class="canvas" height="260"></canvas>
+        <div id="prChips" class="chips"></div>
+      </div>
+
+      <div class="card">
+        <h2>練習の記録</h2>
+        <div id="prHistory" class="list"></div>
+        <button id="clearHistoryBtn" class="btn small-btn">記録を削除</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>データはこの端末のブラウザ内にだけ保存されます。マイク音声は外部に送信されません。</p>
+  </footer>
+
+  <script src="js/notes.js"></script>
+  <script src="js/pitch.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
